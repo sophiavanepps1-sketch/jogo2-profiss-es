@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Que Profissão Sou Eu?</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f0f4ff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  h1 {
+    font-size: 2rem;
+    color: #6C3FC4;
+    text-align: center;
+    margin-bottom: 6px;
+  }
+
+  .subtitle {
+    font-size: 1rem;
+    color: #888;
+    text-align: center;
+    margin-bottom: 24px;
+  }
+
+  .progress {
+    font-size: 0.95rem;
+    color: #6C3FC4;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 10px;
+  }
+
+  /* Clue box */
+  .clue-box {
+    background: #EDE7F9;
+    border-radius: 16px;
+    padding: 16px 24px;
+    max-width: 700px;
+    width: 100%;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  .clue-label {
+    font-size: 0.8rem;
+    color: #6C3FC4;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+  }
+  .clue-text {
+    font-size: 1.1rem;
+    color: #2C2C54;
+    font-style: italic;
+    line-height: 1.5;
+  }
+
+  /* Options grid */
+  .options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    max-width: 700px;
+    width: 100%;
+    margin-bottom: 20px;
+  }
+
+  .option-card {
+    background: white;
+    border: 3px solid #d0c8f0;
+    border-radius: 18px;
+    padding: 20px 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.12s, border-color 0.2s, background 0.2s;
+    user-select: none;
+  }
+  .option-card:hover:not(.locked) {
+    transform: scale(1.03);
+    border-color: #6C3FC4;
+  }
+  .option-card .emoji {
+    font-size: 3rem;
+    display: block;
+    margin-bottom: 8px;
+  }
+  .option-card .name {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #2C2C54;
+  }
+
+  /* States */
+  .option-card.correct {
+    background: #D5F5E3;
+    border-color: #2ECC71;
+  }
+  .option-card.correct .name { color: #1a7a44; }
+
+  .option-card.wrong {
+    background: #FADBD8;
+    border-color: #E74C3C;
+  }
+  .option-card.wrong .name { color: #922b21; }
+
+  .option-card.locked {
+    cursor: default;
+    opacity: 0.5;
+  }
+  .option-card.correct.locked,
+  .option-card.wrong.locked {
+    opacity: 1;
+  }
+
+  /* Feedback */
+  .feedback {
+    min-height: 48px;
+    text-align: center;
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    transition: opacity 0.3s;
+  }
+  .feedback.correct { color: #1a7a44; }
+  .feedback.wrong   { color: #922b21; }
+
+  /* Buttons */
+  .btn {
+    display: inline-block;
+    padding: 12px 32px;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.2s;
+  }
+  .btn:hover { transform: scale(1.04); }
+  .btn:active { transform: scale(0.97); }
+  .btn-next {
+    background: #6C3FC4;
+    color: white;
+  }
+  .btn-retry {
+    background: #E74C3C;
+    color: white;
+    margin-right: 10px;
+  }
+  .btn-skip {
+    background: #aaa;
+    color: white;
+  }
+  .btn-restart {
+    background: #F9C84E;
+    color: #2C2C54;
+  }
+
+  .btn-row {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  /* End screen */
+  .end-screen {
+    text-align: center;
+    max-width: 500px;
+    width: 100%;
+  }
+  .end-screen .trophy { font-size: 5rem; margin-bottom: 12px; }
+  .end-screen h2 { font-size: 2.2rem; color: #F9C84E; text-shadow: 0 2px 0 #c9952e; margin-bottom: 8px; }
+  .end-screen .score { font-size: 1.2rem; color: #2C2C54; margin-bottom: 24px; }
+  .stars { font-size: 2rem; margin-bottom: 20px; }
+
+  /* hidden */
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<div id="game">
+  <h1>🔍 Que Profissão Sou Eu?</h1>
+  <p class="subtitle">Clica na profissão correta!</p>
+  <div class="progress" id="progress">Profissão 1 de 5</div>
+
+  <div class="clue-box">
+    <div class="clue-label">🔎 Pista</div>
+    <div class="clue-text" id="clue"></div>
+  </div>
+
+  <div class="options-grid" id="options"></div>
+
+  <div class="feedback hidden" id="feedback"></div>
+
+  <div class="btn-row hidden" id="btn-row"></div>
+</div>
+
+<div id="end" class="end-screen hidden">
+  <div class="trophy">🏆</div>
+  <h2>Parabéns!</h2>
+  <div class="stars" id="stars"></div>
+  <div class="score" id="score-text"></div>
+  <button class="btn btn-restart" onclick="restart()">↩ Jogar de novo</button>
+</div>
+
+<script>
+const professions = [
+  {
+    clue: '"Uso uma escova e tesouras para ajudar as pessoas a terem um cabelo bonito. Trabalho num salão."',
+    options: [
+      { emoji: "👨‍⚕️", name: "Médico/a",       correct: false },
+      { emoji: "💇",   name: "Cabeleireiro/a", correct: true  },
+      { emoji: "👨‍🍳", name: "Cozinheiro/a",   correct: false },
+      { emoji: "👩‍🚒", name: "Bombeiro/a",     correct: false },
+    ]
+  },
+  {
+    clue: '"Corro, chuto e marco golos. Treino todos os dias num campo de futebol para ganhar jogos."',
+    options: [
+      { emoji: "💇",   name: "Cabeleireiro/a",    correct: false },
+      { emoji: "👩‍🏫", name: "Professora",        correct: false },
+      { emoji: "⚽",   name: "Jogador de Futebol", correct: true  },
+      { emoji: "🚜",   name: "Agricultor/a",       correct: false },
+    ]
+  },
+  {
+    clue: '"Cuido de animais doentes e ajudo-os a ficarem saudáveis. Trabalho numa clínica veterinária."',
+    options: [
+      { emoji: "👨‍🍳", name: "Cozinheiro/a",   correct: false },
+      { emoji: "👩‍🚒", name: "Bombeiro/a",     correct: false },
+      { emoji: "🐾",   name: "Veterinário/a",  correct: true  },
+      { emoji: "💇",   name: "Cabeleireiro/a", correct: false },
+    ]
+  },
+  {
+    clue: '"Uso um avental e uma frigideira para preparar refeições deliciosas. Trabalho num restaurante."',
+    options: [
+      { emoji: "👩‍🚒", name: "Bombeiro/a",     correct: false },
+      { emoji: "👨‍⚕️", name: "Médico/a",       correct: false },
+      { emoji: "👩‍🏫", name: "Professora",     correct: false },
+      { emoji: "👨‍🍳", name: "Cozinheiro/a",   correct: true  },
+    ]
+  },
+  {
+    clue: '"Uso livros e um quadro para ensinar crianças. Trabalho numa escola e ajudo-as a aprender."',
+    options: [
+      { emoji: "👩‍🏫", name: "Professora",     correct: true  },
+      { emoji: "👨‍🍳", name: "Cozinheiro/a",   correct: false },
+      { emoji: "👩‍🚒", name: "Bombeiro/a",     correct: false },
+      { emoji: "🚜",   name: "Agricultor/a",   correct: false },
+    ]
+  },
+];
+
+let current = 0;
+let score = 0;
+let answered = false;
+
+function shuffle(arr) {
+  return arr.slice().sort(() => Math.random() - 0.5);
+}
+
+function render() {
+  const q = professions[current];
+  answered = false;
+
+  document.getElementById('progress').textContent = `Profissão ${current + 1} de ${professions.length}`;
+  document.getElementById('clue').textContent = q.clue;
+
+  const grid = document.getElementById('options');
+  grid.innerHTML = '';
+  const shuffled = shuffle(q.options);
+  shuffled.forEach(opt => {
+    const card = document.createElement('div');
+    card.className = 'option-card';
+    card.innerHTML = `<span class="emoji">${opt.emoji}</span><span class="name">${opt.name}</span>`;
+    card.addEventListener('click', () => handleAnswer(card, opt.correct));
+    grid.appendChild(card);
+  });
+
+  const fb = document.getElementById('feedback');
+  fb.textContent = '';
+  fb.className = 'feedback hidden';
+
+  const row = document.getElementById('btn-row');
+  row.innerHTML = '';
+  row.className = 'btn-row hidden';
+}
+
+function handleAnswer(card, correct) {
+  if (answered) return;
+  answered = true;
+
+  const cards = document.querySelectorAll('.option-card');
+
+  if (correct) {
+    card.classList.add('correct');
+    score++;
+    showFeedback('✅ Muito bem! Acertaste!', 'correct');
+    cards.forEach(c => { if (c !== card) c.classList.add('locked'); });
+    showNextBtn();
+  } else {
+    card.classList.add('wrong');
+    showFeedback('❌ Ups! Não foi dessa vez... tenta outra vez!', 'wrong');
+    cards.forEach(c => c.classList.add('locked'));
+    showRetryBtn();
+  }
+}
+
+function showFeedback(msg, type) {
+  const fb = document.getElementById('feedback');
+  fb.textContent = msg;
+  fb.className = 'feedback ' + type;
+}
+
+function showNextBtn() {
+  const row = document.getElementById('btn-row');
+  row.className = 'btn-row';
+  const label = current < professions.length - 1 ? 'Próxima Profissão →' : 'Ver resultado →';
+  row.innerHTML = `<button class="btn btn-next" onclick="next()">${label}</button>`;
+}
+
+function showRetryBtn() {
+  const row = document.getElementById('btn-row');
+  row.className = 'btn-row';
+  const skipLabel = current < professions.length - 1 ? 'Saltar →' : 'Ver resultado →';
+  row.innerHTML = `
+    <button class="btn btn-retry" onclick="render()">↩ Tentar outra vez</button>
+    <button class="btn btn-skip" onclick="next()">${skipLabel}</button>
+  `;
+}
+
+function next() {
+  current++;
+  if (current >= professions.length) {
+    showEnd();
+  } else {
+    render();
+  }
+}
+
+function showEnd() {
+  document.getElementById('game').classList.add('hidden');
+  const end = document.getElementById('end');
+  end.classList.remove('hidden');
+
+  const pct = score / professions.length;
+  let stars = pct === 1 ? '⭐⭐⭐' : pct >= 0.6 ? '⭐⭐' : '⭐';
+  document.getElementById('stars').textContent = stars;
+  document.getElementById('score-text').textContent = `Acertaste ${score} de ${professions.length} profissões!`;
+}
+
+function restart() {
+  current = 0;
+  score = 0;
+  document.getElementById('end').classList.add('hidden');
+  document.getElementById('game').classList.remove('hidden');
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
